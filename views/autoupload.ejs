@@ -33,7 +33,7 @@
         button[0].addEventListener("click",async()=>{
             const formdata = new FormData()
             formdata.append("url",email[0].value)
-            formdata.append("sort",document.getElementsByName("sort")[0].checked == true ? 1 : 2)
+            formdata.append("_id",localStorage.getItem("_id"))
             console.log( );
             const fetchData = await fetch("/selectchannel",{
                 method:"post",

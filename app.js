@@ -179,7 +179,7 @@ const {executablePath} = require("puppeteer")
       headless: false,
       ignoreHTTPSErrors: true,
       // add this
-      executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", });
+      executablePath: executablePath(), });
       // const browser = await puppeteer.launch({ headless: false });
       const page = await browser.newPage();
       try {
@@ -192,6 +192,8 @@ const {executablePath} = require("puppeteer")
       await page.type('[type="password"', userDetail[0].password);
       await page.click('#passwordNext');
       await page.waitForTimeout(6000);
+      const data = await page.content()
+      console.log()
     // Go to upload page
     for (let i = 0; i < urls.length; i++) {
       try{
@@ -695,6 +697,7 @@ app.post("/selectchannel",form,async(req,res)=>{
 
   app.post("/adduser",form,async(req,res)=>{
     const user = await User.find({email:req.body.email})
+    console.log(user)
     if(user.length > 0){
       res.json({status:0,message:"Internal Server Error"})
     }else{
