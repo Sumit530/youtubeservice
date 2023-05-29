@@ -42,6 +42,7 @@
         console.log( )
         const formdata = new FormData()
         formdata.append("urls",url.toString())
+        formdata.append("_id",localStorage.getItem("_id"))
         formdata.append("time",document.getElementsByName("time")[0].value)
         formdata.append("interval",document.getElementsByName("interval")[0].value)
         const fetchdata = await fetch("/uploadurl",{

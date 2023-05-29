@@ -74,10 +74,19 @@ const {executablePath} = require("puppeteer")
 
     // Fill in video details
     await page.waitForSelector('#textbox');
-    const titlebox = await page.$("#textbox");
+    const titlebox = await page.$("#textbox")
+          await titlebox.click({clickCount:3})
+    // await page.evaluate( () => document.getElementById("#textbox").value = "");
     await page.type('#textbox', title); // Replace with your video title
-    await page.type('#description-textarea', description); // Replace with your video description
+    const desc = await page.$("#description-textarea  #textbox")
+    await desc.type(description) // Replace with your video description
+    var exists =  await page.$eval("#file-loader", () => true).catch(() => false)
+    if(exists){
 
+      const thumbinput = await page.$("#file-loader");
+      
+      await thumbinput.uploadFile(thumbFilePath);
+    }
     // Set privacy
     await page.waitForTimeout(50000)
     const mfk = await page.$("[name='VIDEO_MADE_FOR_KIDS_NOT_MFK']")
@@ -121,18 +130,23 @@ const {executablePath} = require("puppeteer")
     await page.waitForNavigation();
 
     console.log('Video uploaded successfully!');
+   
   } catch (error) {
     console.error('An error occurred:', error);
   } finally {
       // Close the browser
       await browser.close();
-    }
-  
-      await browser.close();
+      fs.unlink(thumbFilePath,(err)=>{
+        console.log(err)
+      })
+      fs.unlink(videoFilePath,(err)=>{
+        console.log(err)
+      })
+    } 
   }
 
   app.get("/",async(req,res)=>{
-      res.render("home",)
+      res.redirect("/uploadpop",)
   })
 
   app.get("/login",(req,res)=>{
@@ -160,9 +174,202 @@ const {executablePath} = require("puppeteer")
     const interval = new Long( parseInt(req.body.interval) * 60000)
     console.log(interval.toString())
     setTimeout(async()=>{
-      for (let i = 0; i < urls.length; ++i) {
-        await waitforme(interval);
-        downloadAndUpload(urls[i])
+      puppeteerExtra.use(stealthPlugin());
+      const browser = await puppeteerExtra.launch({ args: ['--no-sandbox',],
+      headless: false,
+      ignoreHTTPSErrors: true,
+      // add this
+      executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", });
+      // const browser = await puppeteer.launch({ headless: false });
+      const page = await browser.newPage();
+      try {
+      await page.goto('https://accounts.google.com/signin/v2/identifier');
+      const userDetail = await User.find({_id:req.body._id})
+
+      await page.type('[type="email"]', userDetail[0].email,);
+      await page.click('#identifierNext');
+      await page.waitForTimeout(5000);
+      await page.type('[type="password"', userDetail[0].password);
+      await page.click('#passwordNext');
+      await page.waitForTimeout(6000);
+    // Go to upload page
+    for (let i = 0; i < urls.length; i++) {
+      try{
+      await page.goto('https://www.youtube.com/upload');
+      await waitforme(interval);
+      console.log("hey")
+      const videoId = urls[i].match(/^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/)[1]
+
+  const randomname = uuidv4() + ".mp4"
+  const randvid = uuidv4() + ".mp4"
+  const randAudio = uuidv4() + ".mp3"
+  const randothumb = __dirname +"/" +  uuidv4() + ".jpg"
+   const video =   ytdl(videoId,{quality:'highestvideo'}).pipe(fs.createWriteStream(randomname))
+   const audio =   ytdl(videoId,{quality:"highestaudio"}).pipe(fs.createWriteStream(randAudio))
+
+
+function merge(video, audio) {
+  ffmpeg()
+      .addInput(video)
+      .addInput(audio)
+      .addOptions(['-map 0:v', '-map 1:a', '-c:v copy'])
+      .format('mp4')
+      .on('error', error => console.log(error))
+      // .on('end', res => {fs.unlink(__dirname + "\/" + randomname,(err)=>{console.log(err)});fs.unlink(__dirname + "\/" + randAudio,(err)=>{console.log(err)})})
+      .saveToFile(randvid)
+}
+await waitforme(30000)
+merge( `${__dirname}` +  `\/${randomname}`,__dirname + "\/" + randAudio)
+
+  let info = await ytdl.getInfo("https://www.youtube.com/watch?v="+videoId);
+  // console.log(info.videoDetails)
+  download.image({
+    url: info.videoDetails.thumbnails.find((e)=>{return e.url.includes("maxresdefault.webp")})?.url ? info.videoDetails.thumbnails.find((e)=>{return e.url.includes("maxresdefault.webp")})?.url : info.videoDetails.thumbnails[0].url,
+    dest:randothumb
+  }).then((e)=>{
+    console.log(e)
+  }).catch((err)=>{
+    console.log(err)
+  })
+  const title = info.videoDetails.title
+  const description = info.videoDetails.description
+  const keywords = info.videoDetails.keywords
+  // const mfk = info.videoDetails.age_restricted
+  const category = {
+     "Film & Animation":1	 ,
+     "Autos & Vehicles":2	 ,
+     "Music":10,
+     "Pets & Animals":15,
+     "Sports":17,
+     "Short Movies":18,
+     "Travel & Events":19,
+     "Gaming":20,
+     "Videoblogging":21,
+     "People & Blogs":22,
+     "Comedy":23,
+     "Entertainment":24,
+     "News & Politics":25,
+     "Howto & Style":26,
+     "Education":27,
+     "Science & Technology":28,
+     "Nonprofits & Activism":29,
+     "Movies":30,
+     "Anime/Animation":31,
+     "Action/Adventure":32,
+     "Classics":33,
+     "Comedy":34,
+     "Documentary":35,
+     "Drama":36,
+     "Family":37,
+     "Foreign":38,
+     "Horror":39,
+     "Sci-Fi/Fantasy":40,
+     "Thriller":41,
+     "Shorts":42,
+     "Shows":43,
+     "Trailers":44,
+  }
+  fs.unlink(__dirname + "/"+  randomname,(err)=>{
+    console.log(err)
+  })
+  fs.unlink(__dirname +"/" +randAudio,(err)=>{
+    console.log(err)
+  })
+    const cat_id = category[info.videoDetails.category]
+      
+      // Select video file
+    const fileInput = await page.$("input[type='file']");
+    await fileInput.uploadFile(`${__dirname}/${randvid}`); // Replace with the path to your video file
+    
+    // Fill in video details
+    await page.waitForSelector('#textbox');
+    const titlebox = await page.$("#textbox")
+          await titlebox.click({clickCount:3})
+    // await page.evaluate( () => document.getElementById("#textbox").value = "");
+    await page.type('#textbox', title); // Replace with your video title
+    const desc = await page.$("#description-textarea  #textbox")
+    await desc.type(description)
+    // Set privacy
+    var exists =  await page.$eval("#file-loader", () => true).catch(() => false)
+    if(exists){
+
+      const thumbinput = await page.$("#file-loader");
+      
+      await thumbinput.uploadFile(randothumb);
+    }
+    await page.waitForTimeout(30000)
+    const mfk = await page.$("[name='VIDEO_MADE_FOR_KIDS_NOT_MFK']")
+    await mfk.evaluate((x)=>{
+      x.click()
+    })
+    await page.waitForTimeout(5000)
+    const next_btn = await page.waitForSelector('#next-button');
+    await next_btn.evaluate((x)=>{
+      x.click()
+    })
+    // await page.click('#next-button');
+    
+    await page.waitForTimeout(15000)
+    const again_next_btn = await page.waitForSelector('#next-button');
+    await again_next_btn.evaluate((x)=>{
+      x.click()
+    })
+    await page.waitForTimeout(5000)
+    const again_next_btn_2 = await page.waitForSelector('#next-button');
+    await again_next_btn_2.evaluate((x)=>{
+      x.click()
+    })
+    await page.waitForTimeout(5000)
+    const again_next_btn_3 = await page.waitForSelector('#next-button');
+    await again_next_btn_3.evaluate((x)=>{
+      x.click()
+    })
+    
+    await page.waitForTimeout(5000)
+    
+    await page.click('#done-button');
+    // await page.click('#next-button');
+    // await page.click('#radioLabel');
+    // await page.waitForSelector('#private-label');
+    // await page.click('#private-label');
+    
+    // Submit the upload
+    
+    // Wait for the upload to complete
+    await page.waitForTimeout(5000)
+    
+    console.log('Video uploaded successfully!');
+    
+  }catch(err){
+    console.log(err);
+
+  }finally{
+    fs.unlink(`${__dirname}/${randvid}`,(err)=>{
+      console.log(err)
+    })
+    fs.unlink(randothumb,(err)=>{
+      console.log(err)
+    })
+  }
+  }
+  } catch (error) {
+    console.error('An error occurred:', error);
+    
+  } finally {
+    // Close the browser
+    await browser.close();
+    fs.unlink(`${__dirname}/${randvid}`,(err)=>{
+      console.log(err)
+    })
+    fs.unlink(randothumb,(err)=>{
+      console.log(err)
+    })
+    //   for (let i = 0; i < urls.length; ++i) {
+    //     await waitforme(interval);
+    //     // downloadAndUpload(urls[i])
+
+
+    // }
     }
     },subtractMilliSecondsValue)
     res.json({status:1})
@@ -299,6 +506,13 @@ merge( `${__dirname}` +  `\/${randomname}`,__dirname + "\/" + randAudio)
     await page.type('#textbox', title); // Replace with your video title
     const desc = await page.$("#description-textarea  #textbox")
     await desc.type(description)
+    var exists =  await page.$eval("#file-loader", () => true).catch(() => false)
+    if(exists){
+
+      const thumbinput = await page.$("#file-loader");
+      
+      await thumbinput.uploadFile(randothumb);
+    }
     // Set privacy
     await page.waitForTimeout(30000)
     const mfk = await page.$("[name='VIDEO_MADE_FOR_KIDS_NOT_MFK']")

@@ -52,7 +52,8 @@
                 console.log(resp)
                 if(resp.status == 1){
                     
-                    const div = document.createElement("div")
+                    if(!document.querySelector("img")){
+                        const div = document.createElement("div")
                         const div2 = document.createElement("div")
                         const title = document.createElement("h4")
                         const subscriber = document.createElement("h5")
@@ -96,7 +97,6 @@
                         div.appendChild(image)
                         div.appendChild(div2)
                         channel[0].appendChild(div)
-                        if(!document.querySelector("img")){
                     }
                 }
 
