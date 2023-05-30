@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema({
         type:String,
         require:true
     },
+    verify_email:{
+        type:String,
+        require:true
+    },
     url:{
         type:String,
         require:true

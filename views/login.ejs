@@ -102,7 +102,7 @@ button {
 
 </style>
 <div class="container">
-    <h2 class="login-title">Log in</h2>
+    <h2 class="login-title">Add User</h2>
 
     <form class="login-form" action="/adduser" target="/" enctype="multipart/form-data" method="post">
         <div>
@@ -116,6 +116,7 @@ button {
                    />
           </div>
       <div>
+
         <label for="email">Email </label>
         <input
                id="email"
@@ -125,7 +126,16 @@ button {
                required
                />
       </div>
-
+ <div>
+        <label for="name">Verification Mail </label>
+        <input
+               id="vmail"
+               type="text"
+               placeholder="Eren Buruk"
+               name="verify_email"
+               required
+               />
+      </div>
       <div>
         <label for="password">Password </label>
         <input
